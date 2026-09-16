@@ -1,10 +1,13 @@
 const { app, BrowserWindow, shell } = require("electron");
+const fs = require("fs");
+const path = require("path");
 const store = require("./store");
 const discordAuth = require("./discordAuth");
 const backendClient = require("./backendClient");
 const hotkeys = require("./hotkeys");
-const { autoUpdater } = require("./updater");
+const { autoUpdater, getLastStatus } = require("./updater");
 const { codexArticles, defaultBinder } = require("./localData");
+const { captureFullScreen } = require("./screenshot");
 
 function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
   const token = () => discordAuth.getToken();
@@ -47,6 +50,51 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
     windows.resetLayout();
     return true;
   });
+
+  // ---------- личная раскладка окон (что открывать при Ctrl+K / входе) ----------
+  ipcMain.handle("panel:saveCurrentLayout", () => ({ ok: true, panels: windows.saveCurrentLayout() }));
+  ipcMain.handle("panel:getSavedLayout", () => windows.getSavedLayout());
+  ipcMain.handle("panel:clearSavedLayout", () => {
+    windows.clearSavedLayout();
+    return true;
+  });
+  ipcMain.handle("panel:openSavedLayout", () => ({ ok: windows.openSavedLayout() }));
+
+  // ---------- захват области экрана с разметкой ----------
+  ipcMain.handle("capture:start", async () => {
+    try {
+      const shot = await captureFullScreen();
+      return { ok: true, ...shot };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle("capture:cancel", () => {
+    windows.closeCaptureWindow();
+    return true;
+  });
+
+  ipcMain.handle("capture:save", async (_e, dataUrl) => {
+    try {
+      const dir = path.join(app.getPath("pictures"), "LSPD Screenshots");
+      fs.mkdirSync(dir, { recursive: true });
+      const fileName = `lspd-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+      const filePath = path.join(dir, fileName);
+      const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+      fs.writeFileSync(filePath, Buffer.from(base64, "base64"));
+      windows.closeCaptureWindow();
+      return { ok: true, filePath };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle("capture:openFolder", (_e, filePath) => {
+    shell.showItemInFolder(filePath);
+    return true;
+  });
+
   ipcMain.handle("panel:applyRoleDefaults", () => {
     const session = discordAuth.getSession();
     if (!session?.officer) return { ok: false, error: "Нет активной сессии" };
@@ -89,6 +137,8 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
   ipcMain.handle("ui:toggleInteractiveMode", () => windows.toggleInteractiveMode());
 
   // ---------- обновления ----------
+  ipcMain.handle("update:getStatus", () => getLastStatus());
+
   ipcMain.handle("update:check", async () => {
     try {
       const result = await autoUpdater.checkForUpdates();
@@ -174,16 +224,28 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
   mappingChannels("Academy", "academy");
 
   // ---------- discord auth (через backend) ----------
+  // Личный сохранённый набор окон — приоритетнее раскладки по званию,
+  // если офицер уже настроил свой набор (см. panel:saveCurrentLayout).
+  function openPanelsForLogin(officer) {
+    const saved = windows.getSavedLayout();
+    if (saved && saved.length) {
+      saved.forEach((p) => windows.showPanel(p));
+      return saved;
+    }
+    const preset = officer.defaultPanels;
+    const panelsToOpen = preset && preset.length ? preset : ["quickmenu"];
+    panelsToOpen.forEach((p) => windows.showPanel(p));
+    return panelsToOpen;
+  }
+
   ipcMain.handle("auth:loginWithDiscord", async () => {
     try {
       const session = await discordAuth.loginWithDiscord();
       // После успешного входа: прячем окно логина и открываем панели —
-      // по пресету звания (defaultPanels), если он задан на backend'е,
-      // иначе по умолчанию только Police Assistant.
+      // личный сохранённый набор в приоритете, иначе пресет звания
+      // (defaultPanels) с backend'а, иначе только Police Assistant.
       getAuthWindow()?.hide();
-      const preset = session.officer.defaultPanels;
-      const panelsToOpen = preset && preset.length ? preset : ["quickmenu"];
-      panelsToOpen.forEach((p) => windows.showPanel(p));
+      openPanelsForLogin(session.officer);
       return { ok: true, officer: session.officer };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -198,9 +260,7 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
     try {
       const session = await discordAuth.continueWithProfile(officerId);
       getAuthWindow()?.hide();
-      const preset = session.officer.defaultPanels;
-      const panelsToOpen = preset && preset.length ? preset : ["quickmenu"];
-      panelsToOpen.forEach((p) => windows.showPanel(p));
+      openPanelsForLogin(session.officer);
       return { ok: true, officer: session.officer };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -254,6 +314,12 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
   ipcMain.handle("data:createAccident", (_e, payload) => be("POST", "/api/accidents", payload));
   ipcMain.handle("data:updateAccident", (_e, { threadId, fields }) => be("PATCH", `/api/accidents/${threadId}`, { fields }));
   ipcMain.handle("data:updateAccidentStatus", (_e, { threadId, status }) => be("PATCH", `/api/accidents/${threadId}/status`, { status }));
+
+  ipcMain.handle("data:listPersonnel", () => be("GET", "/api/personnel"));
+  ipcMain.handle("data:createPersonnelRecord", (_e, payload) => be("POST", "/api/personnel", payload));
+
+  ipcMain.handle("data:listFactionRankLadder", () => be("GET", "/api/officers/ranks"));
+  ipcMain.handle("data:changeOfficerRank", (_e, { discordId, rankMappingId }) => be("POST", `/api/officers/${discordId}/rank`, { rankMappingId }));
 
   // ---------- Памятка ----------
   ipcMain.handle("data:listCodex", () => be("GET", "/api/codex"));

@@ -11,8 +11,12 @@ const PANEL_OPTIONS = [
   { value: "discordlog", label: "Discord" },
   { value: "dashboard", label: "Главная (LSPD Assistant)" },
   { value: "settings", label: "Настройки" },
+  { value: "bodycam", label: "Bodycam-оверлей" },
+  { value: "playersettings", label: "Мои настройки" },
+  { value: "factionadmin", label: "Фракции и роли" },
   { value: "__toggleAll__", label: "Показать/скрыть все панели" },
   { value: "__toggleInteractive__", label: "Режим взаимодействия (клик сквозь панели)" },
+  { value: "__captureRegion__", label: "Захват области экрана с разметкой" },
   { value: "__quit__", label: "Закрыть программу полностью" }
 ];
 

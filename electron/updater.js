@@ -9,8 +9,19 @@ const { autoUpdater } = require("electron-updater");
 
 autoUpdater.autoDownload = false; // сначала спросим, не будем качать в фоне без спроса
 
+// Последний известный статус — храним отдельно от события, чтобы окно
+// аккаунта могло подхватить актуальный статус даже если оно было закрыто
+// (не смонтирован React-компонент) в момент, когда пришло само событие —
+// иначе автопроверка на старте могла "потеряться" молча.
+let lastStatus = null;
+
+function getLastStatus() {
+  return lastStatus;
+}
+
 function initAutoUpdater(getAuthWindow) {
   const send = (channel, payload) => {
+    lastStatus = payload;
     const win = getAuthWindow();
     if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
   };
@@ -22,4 +33,4 @@ function initAutoUpdater(getAuthWindow) {
   autoUpdater.on("error", (err) => send("update:status", { state: "error", message: err.message }));
 }
 
-module.exports = { autoUpdater, initAutoUpdater };
+module.exports = { autoUpdater, initAutoUpdater, getLastStatus };

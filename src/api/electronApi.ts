@@ -176,6 +176,15 @@ declare global {
       openPanel: (name: string) => Promise<boolean>;
       hidePanel: (name: string) => Promise<boolean>;
       resetLayout: () => Promise<boolean>;
+      saveCurrentLayout: () => Promise<{ ok: boolean; panels: string[] }>;
+      getSavedLayout: () => Promise<string[] | null>;
+      clearSavedLayout: () => Promise<boolean>;
+      openSavedLayout: () => Promise<{ ok: boolean }>;
+
+      captureStart: () => Promise<{ ok: boolean; dataUrl?: string; width?: number; height?: number; scaleFactor?: number; error?: string }>;
+      captureCancel: () => Promise<boolean>;
+      captureSave: (dataUrl: string) => Promise<{ ok: boolean; filePath?: string; error?: string }>;
+      captureOpenFolder: (filePath: string) => Promise<boolean>;
 
       getHotkeys: () => Promise<Record<string, string>>;
       saveHotkeys: (bindings: Record<string, string>) => Promise<{ ok: boolean; results: HotkeyRegisterResult[] }>;
@@ -188,6 +197,7 @@ declare global {
       toggleInteractiveMode: () => Promise<boolean>;
       onInteractiveModeChanged: (cb: (value: boolean) => void) => void;
 
+      getUpdateStatus: () => Promise<UpdateStatus | null>;
       checkForUpdate: () => Promise<{ ok: boolean; version?: string; error?: string }>;
       downloadUpdate: () => Promise<{ ok: boolean; error?: string }>;
       installUpdate: () => Promise<boolean>;
@@ -273,6 +283,12 @@ declare global {
       createAccident: (payload: any) => Promise<{ ok: boolean; error?: string }>;
       updateAccident: (threadId: string, fields: Record<string, string>) => Promise<{ ok: boolean; error?: string }>;
       updateAccidentStatus: (threadId: string, status: string) => Promise<{ ok: boolean; error?: string }>;
+
+      listPersonnel: () => Promise<{ ok: boolean; items: ForumEntry[]; error?: string }>;
+      createPersonnelRecord: (payload: { targetNickname: string; type: string; reason: string }) => Promise<{ ok: boolean; error?: string }>;
+
+      listFactionRankLadder: () => Promise<{ ok: boolean; items: RankMappingRow[]; error?: string }>;
+      changeOfficerRank: (discordId: string, rankMappingId: string) => Promise<{ ok: boolean; error?: string }>;
       createVehicle: (payload: any) => Promise<{ ok: boolean; error?: string }>;
       updateVehicle: (threadId: string, fields: Record<string, string>) => Promise<{ ok: boolean; error?: string }>;
 

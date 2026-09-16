@@ -18,7 +18,8 @@ const PANEL_CONFIG = {
   dashboard: { width: 1180, height: 760, corner: "center" },
   settings: { width: 820, height: 700, corner: "center" },
   playersettings: { width: 480, height: 620, corner: "center" },
-  factionadmin: { width: 1000, height: 720, corner: "center" }
+  factionadmin: { width: 1000, height: 720, corner: "center" },
+  bodycam: { width: 320, height: 200, corner: "bottom-left" }
 };
 
 const panels = {}; // name -> BrowserWindow
@@ -198,9 +199,51 @@ function hidePanel(name) {
   if (win && !win.isDestroyed()) win.hide();
 }
 
-/** Хоткей K — спрятать/показать разом все открытые панели. */
+/** Личная раскладка окон: какие панели считать "моим рабочим набором".
+ * Без этого Ctrl+K показывает вообще всё, что хоть раз открывали за
+ * сессию — даже случайно открытую и забытую панель. Сохранённая раскладка
+ * — то, что реально нужно показывать при разворачивании. */
+function saveCurrentLayout() {
+  const visible = Object.entries(panels)
+    .filter(([, w]) => !w.isDestroyed() && w.isVisible())
+    .map(([name]) => name);
+  store.set("layout.savedPanels", visible);
+  return visible;
+}
+
+function getSavedLayout() {
+  return store.get("layout.savedPanels", null);
+}
+
+function clearSavedLayout() {
+  store.delete("layout.savedPanels");
+}
+
+/** Открывает ровно сохранённую раскладку — прячет всё остальное. */
+function openSavedLayout() {
+  const saved = getSavedLayout();
+  if (!saved || !saved.length) return false;
+  Object.values(panels).forEach((w) => {
+    if (!w.isDestroyed()) w.hide();
+  });
+  saved.forEach((name) => showPanel(name));
+  allVisible = true;
+  return true;
+}
+
+/** Хоткей Ctrl+K — спрятать/показать разом. Если есть сохранённая личная
+ * раскладка — "показать" означает именно её, а не вообще всё, что когда-
+ * либо открывалось за сессию. */
 function toggleAllVisibility() {
   allVisible = !allVisible;
+  if (allVisible) {
+    const saved = getSavedLayout();
+    if (saved && saved.length) {
+      Object.values(panels).forEach((w) => { if (!w.isDestroyed()) w.hide(); });
+      saved.forEach((name) => showPanel(name));
+      return;
+    }
+  }
   Object.values(panels).forEach((w) => {
     if (w.isDestroyed()) return;
     if (allVisible) w.show();
@@ -214,6 +257,48 @@ function closeAllPanels() {
   });
 }
 
+let captureWindow = null;
+
+/** Открывает полноэкранный оверлей захвата — отдельное, одноразовое окно
+ * (не входит в panels/раскладку/Ctrl+K). Всегда интерактивно (нужно
+ * тащить мышью выделение), независимо от общего режима клика-сквозь. */
+function openCaptureWindow() {
+  if (captureWindow && !captureWindow.isDestroyed()) {
+    captureWindow.focus();
+    return;
+  }
+  const primary = screen.getPrimaryDisplay();
+  captureWindow = new BrowserWindow({
+    x: primary.bounds.x,
+    y: primary.bounds.y,
+    width: primary.bounds.width,
+    height: primary.bounds.height,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  captureWindow.setAlwaysOnTop(true, "screen-saver");
+  captureWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
+  const url = isDev ? `${DEV_URL}#capture` : `file://${path.join(__dirname, "..", "dist", "index.html")}#capture`;
+  captureWindow.loadURL(url);
+
+  captureWindow.on("closed", () => { captureWindow = null; });
+}
+
+function closeCaptureWindow() {
+  if (captureWindow && !captureWindow.isDestroyed()) captureWindow.close();
+}
+
 module.exports = {
   createPanel,
   togglePanel,
@@ -225,5 +310,11 @@ module.exports = {
   refreshOpacitySettings,
   getInteractiveMode,
   toggleInteractiveMode,
+  saveCurrentLayout,
+  getSavedLayout,
+  clearSavedLayout,
+  openSavedLayout,
+  openCaptureWindow,
+  closeCaptureWindow,
   panels
 };

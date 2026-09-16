@@ -15,6 +15,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openPanel: (name) => ipcRenderer.invoke("panel:open", name),
   hidePanel: (name) => ipcRenderer.invoke("panel:hide", name),
   resetLayout: () => ipcRenderer.invoke("panel:resetLayout"),
+  saveCurrentLayout: () => ipcRenderer.invoke("panel:saveCurrentLayout"),
+  getSavedLayout: () => ipcRenderer.invoke("panel:getSavedLayout"),
+  clearSavedLayout: () => ipcRenderer.invoke("panel:clearSavedLayout"),
+  openSavedLayout: () => ipcRenderer.invoke("panel:openSavedLayout"),
+
+  captureStart: () => ipcRenderer.invoke("capture:start"),
+  captureCancel: () => ipcRenderer.invoke("capture:cancel"),
+  captureSave: (dataUrl) => ipcRenderer.invoke("capture:save", dataUrl),
+  captureOpenFolder: (filePath) => ipcRenderer.invoke("capture:openFolder", filePath),
 
   // хоткеи
   getHotkeys: () => ipcRenderer.invoke("hotkeys:get"),
@@ -30,6 +39,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onInteractiveModeChanged: (cb) => ipcRenderer.on("ui:interactiveModeChanged", (_e, value) => cb(value)),
 
   // обновления
+  getUpdateStatus: () => ipcRenderer.invoke("update:getStatus"),
   checkForUpdate: () => ipcRenderer.invoke("update:check"),
   downloadUpdate: () => ipcRenderer.invoke("update:download"),
   installUpdate: () => ipcRenderer.invoke("update:install"),
@@ -122,6 +132,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   createAccident: (payload) => ipcRenderer.invoke("data:createAccident", payload),
   updateAccident: (threadId, fields) => ipcRenderer.invoke("data:updateAccident", { threadId, fields }),
   updateAccidentStatus: (threadId, status) => ipcRenderer.invoke("data:updateAccidentStatus", { threadId, status }),
+
+  listPersonnel: () => ipcRenderer.invoke("data:listPersonnel"),
+  createPersonnelRecord: (payload) => ipcRenderer.invoke("data:createPersonnelRecord", payload),
+
+  listFactionRankLadder: () => ipcRenderer.invoke("data:listFactionRankLadder"),
+  changeOfficerRank: (discordId, rankMappingId) => ipcRenderer.invoke("data:changeOfficerRank", { discordId, rankMappingId }),
   createVehicle: (payload) => ipcRenderer.invoke("data:createVehicle", payload),
   updateVehicle: (threadId, fields) => ipcRenderer.invoke("data:updateVehicle", { threadId, fields }),
 

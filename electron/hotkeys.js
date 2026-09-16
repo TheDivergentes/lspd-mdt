@@ -14,6 +14,8 @@ const DEFAULT_BINDINGS = {
   F9: "mdt",              // MDT
   F10: "codex",           // Памятки
   F11: "discordlog",      // Discord
+  F6: "bodycam",           // оверлей "бодикамера" для записи в OBS
+  "Control+Shift+S": "__captureRegion__", // захват области экрана с разметкой
   "Control+K": "__toggleAll__", // показать/скрыть все открытые панели разом
   Insert: "__toggleInteractive__", // переключить режим "клик сквозь панели" / "можно нажимать кнопки"
   "Control+Alt+Q": "__quit__" // полностью закрыть приложение — работает всегда, даже если не видно трея
@@ -28,8 +30,10 @@ const PANEL_LABELS = {
   discordlog: "Discord",
   dashboard: "Главная (LSPD Assistant)",
   settings: "Настройки",
+  bodycam: "Bodycam-оверлей",
   __toggleAll__: "Показать/скрыть все панели",
   __toggleInteractive__: "Переключить режим взаимодействия (клик сквозь панели)",
+  __captureRegion__: "Захват области экрана с разметкой",
   __quit__: "Закрыть программу полностью"
 };
 
@@ -59,6 +63,7 @@ function applyBindings() {
       _globalShortcut.register(key, () => {
         if (target === "__toggleAll__") _windows.toggleAllVisibility();
         else if (target === "__toggleInteractive__") _windows.toggleInteractiveMode();
+        else if (target === "__captureRegion__") _windows.openCaptureWindow();
         else if (target === "__quit__") _quit && _quit();
         else _windows.togglePanel(target);
       });

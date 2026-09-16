@@ -3,7 +3,7 @@ const path = require("path");
 const { registerHotkeys, unregisterHotkeys } = require("./hotkeys");
 const { registerIpcHandlers } = require("./ipcHandlers");
 const windows = require("./windows");
-const { initAutoUpdater } = require("./updater");
+const { autoUpdater, initAutoUpdater } = require("./updater");
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -82,6 +82,12 @@ app.whenReady().then(() => {
   registerIpcHandlers({ ipcMain, getAuthWindow: () => authWindow, windows });
   registerHotkeys({ globalShortcut, windows, quit: () => app.quit() });
   initAutoUpdater(() => authWindow);
+
+  // Автопроверка обновлений — тестировщику не нужно вспоминать про кнопку.
+  // Первая проверка через 10 сек после запуска (даём приложению осесть),
+  // дальше — раз в 2 часа, на случай долгой RP-сессии без перезапуска.
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10_000);
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 2 * 60 * 60 * 1000);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createAuthWindow();

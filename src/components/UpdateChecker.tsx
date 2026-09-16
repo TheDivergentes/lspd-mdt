@@ -7,6 +7,7 @@ export default function UpdateChecker() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
+    api().getUpdateStatus().then((s) => { if (s) setStatus(s); });
     api().onUpdateStatus(setStatus);
   }, []);
 
@@ -23,10 +24,11 @@ export default function UpdateChecker() {
         <h2>Обновления</h2>
       </div>
       <div className="hint-text" style={{ marginTop: 0, marginBottom: 10 }}>
-        Установщик Windows и так обновляет приложение поверх старой версии
-        без удаления (запустите новый Setup.exe, если он у вас есть). Кнопка
-        ниже — проверка обновлений внутри самого приложения, работает только
-        если настроена публикация релизов (см. BUILD.md).
+        Проверяется автоматически при запуске и каждые 2 часа — кнопка ниже
+        для внеочередной проверки прямо сейчас. Работает, если настроена
+        публикация релизов (см. BUILD.md); установщик Windows и так обновляет
+        поверх старой версии без удаления (запустите новый Setup.exe вручную,
+        если он у вас есть).
       </div>
 
       {status?.state === "latest" && <div className="sub">У вас последняя версия.</div>}

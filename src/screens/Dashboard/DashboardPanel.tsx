@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Home, KeyRound, BookOpen, FolderOpen, Users, Car, FileText, AlertTriangle,
-  Settings, Settings2, Radio, MessageSquare, FolderKanban, Power, LayoutGrid, Shield
+  Settings, Settings2, Radio, MessageSquare, FolderKanban, Power, LayoutGrid, Shield, UserCircle
 } from "lucide-react";
 import { api } from "../../api/electronApi";
 import { useOfficer } from "../../state/useOfficer";
@@ -18,7 +18,8 @@ const NAV = [
   { key: "discordlog", label: "Discord", icon: MessageSquare },
   { key: "playersettings", label: "Мои настройки", icon: Settings2 },
   { key: "settings", label: "Настройки (админ)", icon: Settings },
-  { key: "factionadmin", label: "Фракции и роли", icon: Shield }
+  { key: "factionadmin", label: "Фракции и роли", icon: Shield },
+  { key: "account", label: "Аккаунт / Обновления", icon: UserCircle, special: true }
 ];
 
 function useClock() {
@@ -98,7 +99,11 @@ export default function DashboardPanel() {
               <div
                 key={n.key}
                 className={`codex-nav-item ${n.current ? "active" : ""}`}
-                onClick={() => !n.current && api().openPanel(n.key)}
+                onClick={() => {
+                  if (n.current) return;
+                  if ((n as any).special) api().showAuthWindow();
+                  else api().openPanel(n.key);
+                }}
               >
                 <Icon size={14} />
                 <span style={{ flex: 1 }}>{n.label}</span>

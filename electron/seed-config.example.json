@@ -1,0 +1,4 @@
+{
+  "_comment": "Скопируйте в electron/seed-config.json (без .example) и укажите адрес вашего backend'а. Файл electron/seed-config.json НЕ должен попадать в публичный репозиторий — он уже в .gitignore. При сборке (npm run dist) зашивается в установщик — тестировщики сразу видят экран входа, без ручного ввода.",
+  "backendUrl": "http://72.56.70.40"
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-electron
+release
+.env
+*.log
+
+# Реальные секреты для seed-конфига — никогда не коммитить и не пересылать
+# по открытым каналам. Шаблон — seed-config.example.json.
+electron/seed-config.json

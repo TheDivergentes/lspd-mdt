@@ -1,0 +1,54 @@
+{
+  "name": "lspd-mdt",
+  "version": "0.1.0",
+  "description": "LSPD MDT Assistant — Electron overlay app с Discord-логином и форум-каналами как БД",
+  "main": "electron/main.js",
+  "author": "",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "build:renderer": "vite build",
+    "start": "electron .",
+    "dist": "npm run build:renderer && electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^0.383.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "electron": "^32.1.2",
+    "electron-builder": "^25.0.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.6",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.lspdrp.mdtassistant",
+    "productName": "LSPD MDT Assistant",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": { "target": "nsis", "icon": "build/icon.ico" },
+    "mac": { "target": "dmg", "icon": "build/icon.png" },
+    "linux": { "target": "AppImage", "icon": "build/icon.png" },
+    "publish": {
+      "provider": "github",
+      "owner": "ВАШ_GITHUB_ЛОГИН",
+      "repo": "lspd-mdt"
+    }
+  }
+}

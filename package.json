@@ -1,6 +1,6 @@
 {
   "name": "lspd-mdt",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "LSPD MDT Assistant — Electron overlay app с Discord-логином и форум-каналами как БД",
   "main": "electron/main.js",
   "author": "",
@@ -48,7 +48,8 @@
     "publish": {
       "provider": "github",
       "owner": "TheDivergentes",
-      "repo": "lspd-mdt"
+      "repo": "lspd-mdt",
+      "releaseType": "release"
     }
   }
 }

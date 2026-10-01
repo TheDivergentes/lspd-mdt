@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, shell, dialog } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const store = require("./store");
@@ -360,14 +360,40 @@ function registerIpcHandlers({ ipcMain, getAuthWindow, windows }) {
   ipcMain.handle("data:listRecentLogs", () => be("GET", "/api/discordlog"));
   ipcMain.handle("data:broadcastMessage", (_e, message) => be("POST", "/api/discordlog/broadcast", { message }));
 
-  // ---------- вложения — пока не перенесены на backend ----------
-  // (multipart-загрузка файлов по HTTP ещё не реализована на сервере —
-  // см. README backend-проекта, раздел "Что НЕ мигрировано")
-  ipcMain.handle("data:attachScreenshots", () => ({
-    ok: false,
-    error: "Вложения временно недоступны — эта функция ещё не перенесена на backend."
-  }));
-  ipcMain.handle("data:listAttachments", () => ({ ok: true, attachments: [] }));
+  // ---------- вложения (фото/скриншоты к делу, гражданину и т.д.) ----------
+  const MIME_BY_EXT = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp" };
+
+  ipcMain.handle("data:attachScreenshots", async (_e, { threadId, note }) => {
+    const win = BrowserWindow.getFocusedWindow();
+    const result = await dialog.showOpenDialog(win, {
+      title: "Выберите фото/скриншоты",
+      properties: ["openFile", "multiSelections"],
+      filters: [{ name: "Изображения", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }]
+    });
+    if (result.canceled || !result.filePaths.length) return { ok: true, canceled: true };
+
+    let lastError = null;
+    for (let i = 0; i < result.filePaths.length; i++) {
+      const filePath = result.filePaths[i];
+      try {
+        const ext = path.extname(filePath).toLowerCase();
+        const mime = MIME_BY_EXT[ext] || "image/png";
+        const buffer = fs.readFileSync(filePath);
+        const imageBase64 = `data:${mime};base64,${buffer.toString("base64")}`;
+        const fileName = path.basename(filePath);
+        // Подпись — только под первым файлом в пачке, не дублируем под каждым.
+        const res = await be("POST", `/api/attachments/${threadId}`, { imageBase64, fileName, caption: i === 0 ? note : undefined });
+        if (!res.ok) lastError = res.error;
+      } catch (err) {
+        lastError = err.message;
+      }
+    }
+
+    const listRes = await be("GET", `/api/attachments/${threadId}`);
+    return { ok: !lastError, error: lastError || undefined, attachments: listRes.attachments || [] };
+  });
+
+  ipcMain.handle("data:listAttachments", (_e, threadId) => be("GET", `/api/attachments/${threadId}`));
 
   // ---------- биндер (локальный, не связан с Discord) ----------
   ipcMain.handle("data:getBinder", () => store.get("binder.items", defaultBinder));

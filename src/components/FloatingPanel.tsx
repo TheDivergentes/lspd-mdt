@@ -34,6 +34,11 @@ export default function FloatingPanel({ panelName, title, subtitle, icon, header
   return (
     <div className={`floating-root ${theme === "maroon" ? "theme-maroon" : ""} ${!interactive ? "clickthrough" : ""}`}>
       <div className="floating-panel">
+        <div className="cad-scanline" aria-hidden="true" />
+        <div className="cad-corner cad-corner-tl" aria-hidden="true" />
+        <div className="cad-corner cad-corner-tr" aria-hidden="true" />
+        <div className="cad-corner cad-corner-bl" aria-hidden="true" />
+        <div className="cad-corner cad-corner-br" aria-hidden="true" />
         <div className="floating-header">
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LSPDBadge size={28} />
